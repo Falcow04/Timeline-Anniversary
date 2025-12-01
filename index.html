@@ -1008,7 +1008,7 @@
             const currentY = gsap.getProperty(world, "y") || 0;
 
             // Apply dampening for smoother zoom (higher = faster)
-            const dampening = 0.7;
+            const dampening = 1.4;
             const smoothRatio = 1 + (scaleRatio - 1) * dampening;
 
             let newScale = currentScale * smoothRatio;
