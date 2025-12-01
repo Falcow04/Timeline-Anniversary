@@ -962,68 +962,94 @@
         }, { passive: false });
 
         // --- TOUCH PINCH ZOOM ---
-        let initialPinchDistance = null;
-        let initialScale = 1;
+        let lastPinchDistance = null;
+        let lastPinchCenter = null;
+        let isPinching = false;
         const viewport = document.getElementById('viewport');
+
+        function getPinchDistance(touches) {
+            return Math.hypot(
+                touches[0].clientX - touches[1].clientX,
+                touches[0].clientY - touches[1].clientY
+            );
+        }
+
+        function getPinchCenter(touches) {
+            return {
+                x: (touches[0].clientX + touches[1].clientX) / 2,
+                y: (touches[0].clientY + touches[1].clientY) / 2
+            };
+        }
 
         viewport.addEventListener('touchstart', (e) => {
             if (isZoomed) return;
             if (e.touches.length === 2) {
-                e.preventDefault();
-                initialPinchDistance = Math.hypot(
-                    e.touches[0].clientX - e.touches[1].clientX,
-                    e.touches[0].clientY - e.touches[1].clientY
-                );
-                initialScale = gsap.getProperty(world, "scale") || 1;
+                isPinching = true;
+                if (draggable) draggable.disable();
+                lastPinchDistance = getPinchDistance(e.touches);
+                lastPinchCenter = getPinchCenter(e.touches);
             }
-        }, { passive: false });
+        }, { passive: true });
 
         viewport.addEventListener('touchmove', (e) => {
-            if (isZoomed) return;
-            if (e.touches.length === 2 && initialPinchDistance !== null) {
-                e.preventDefault();
+            if (isZoomed || !isPinching || e.touches.length !== 2) return;
 
-                const currentDistance = Math.hypot(
-                    e.touches[0].clientX - e.touches[1].clientX,
-                    e.touches[0].clientY - e.touches[1].clientY
-                );
+            e.preventDefault();
 
-                const scaleChange = currentDistance / initialPinchDistance;
-                let newScale = initialScale * scaleChange;
-                newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
+            const currentDistance = getPinchDistance(e.touches);
+            const currentCenter = getPinchCenter(e.touches);
 
-                // Get center point between two fingers
-                const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-                const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+            // Calculate scale change ratio (small incremental change)
+            const scaleRatio = currentDistance / lastPinchDistance;
 
-                const rect = viewport.getBoundingClientRect();
-                const pinchX = centerX - rect.left;
-                const pinchY = centerY - rect.top;
+            // Get current values
+            const currentScale = gsap.getProperty(world, "scale") || 1;
+            const currentX = gsap.getProperty(world, "x") || 0;
+            const currentY = gsap.getProperty(world, "y") || 0;
 
-                // Get current world position
-                const currentX = gsap.getProperty(world, "x") || 0;
-                const currentY = gsap.getProperty(world, "y") || 0;
+            // Apply dampening for smoother zoom (0.3 = 30% of the change)
+            const dampening = 0.4;
+            const smoothRatio = 1 + (scaleRatio - 1) * dampening;
 
-                // Calculate the point on the world under the pinch center
-                const worldPinchX = (pinchX - currentX) / initialScale;
-                const worldPinchY = (pinchY - currentY) / initialScale;
+            let newScale = currentScale * smoothRatio;
+            newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
 
-                // Calculate new position to keep pinch center stationary
-                const newX = pinchX - worldPinchX * newScale;
-                const newY = pinchY - worldPinchY * newScale;
+            // Calculate position adjustment to zoom toward pinch center
+            const rect = viewport.getBoundingClientRect();
+            const pinchX = currentCenter.x - rect.left;
+            const pinchY = currentCenter.y - rect.top;
 
-                gsap.set(world, {
-                    scale: newScale,
-                    x: newX,
-                    y: newY
-                });
-            }
+            // Point on world under pinch center
+            const worldX = (pinchX - currentX) / currentScale;
+            const worldY = (pinchY - currentY) / currentScale;
+
+            // New position keeping pinch center stationary
+            const newX = pinchX - worldX * newScale;
+            const newY = pinchY - worldY * newScale;
+
+            gsap.to(world, {
+                scale: newScale,
+                x: newX,
+                y: newY,
+                duration: 0.1,
+                ease: "none",
+                overwrite: true
+            });
+
+            // Update last values for next frame
+            lastPinchDistance = currentDistance;
+            lastPinchCenter = currentCenter;
         }, { passive: false });
 
         viewport.addEventListener('touchend', (e) => {
             if (e.touches.length < 2) {
-                initialPinchDistance = null;
-                if(draggable) draggable.applyBounds(updateDraggableBounds());
+                isPinching = false;
+                lastPinchDistance = null;
+                lastPinchCenter = null;
+                if (draggable && !isZoomed) {
+                    draggable.enable();
+                    draggable.applyBounds(updateDraggableBounds());
+                }
             }
         });
 
