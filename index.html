@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>1 jaar samen - timeline</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Great+Vibes&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
+
+    <!-- GSAP for Animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/Draggable.min.js"></script>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --primary: #ff4d6d;
+            --secondary: #590d22;
+            --text: #fff0f3;
+            --glass: rgba(40, 10, 20, 0.9);
+            --door-frame: #ff8fa3;
+            --door-wood: #2b0a12;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #0f0508;
+            color: var(--text);
+            font-family: 'Montserrat', sans-serif;
+            width: 100vw;
+            height: 100vh;
+            touch-action: pan-x pan-y pinch-zoom;
+        }
+
+        /* --- INTRO SCREEN --- */
+        #intro-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0f0508;
+            z-index: 5000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 1.5s ease-in-out, visibility 1.5s;
+        }
+
+        #intro-screen.hidden-fade {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .intro-card {
+            text-align: center;
+            max-width: 500px;
+            padding: 40px;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .intro-img-frame {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            border: 4px solid var(--primary);
+            overflow: hidden;
+            margin: 0 auto 30px;
+            box-shadow: 0 0 50px rgba(255, 77, 109, 0.3);
+        }
+
+        .start-btn {
+            margin-top: 40px;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            background: transparent;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'Cinzel', serif;
+            letter-spacing: 2px;
+        }
+
+        .start-btn:hover {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 0 30px var(--primary);
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        /* --- MAIN UI --- */
+        .ui-layer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+            opacity: 0; /* Hidden initially */
+            transition: opacity 1s 1s; /* Delayed fade in */
+        }
+
+        .ui-layer.visible {
+            opacity: 1;
+        }
+
+        .interactive-btn {
+            pointer-events: auto !important;
+            cursor: pointer;
+            z-index: 1001;
+        }
+
+        #viewport {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+            cursor: grab;
+            z-index: 1;
+        }
+
+        #viewport:active {
+            cursor: grabbing;
+        }
+
+        #world {
+            position: absolute;
+            width: 3000px;
+            height: 2500px; /* INCREASED HEIGHT FOR MORE MEMORIES */
+            top: 0;
+            left: 0;
+            transform-origin: 0 0;
+            will-change: transform;
+        }
+
+        #bg-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        svg.connections {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+            overflow: visible;
+        }
+
+        .connection-path {
+            fill: none;
+            stroke: rgba(255, 77, 109, 0.4);
+            stroke-width: 3px;
+            stroke-dasharray: 15, 10;
+            filter: drop-shadow(0 0 5px #ff4d6d);
+        }
+
+        /* --- 3D DOOR STYLES --- */
+        .node {
+            position: absolute;
+            width: 40px;
+            height: 60px;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            cursor: pointer;
+            pointer-events: auto;
+            perspective: 600px; /* Essential for 3D open effect */
+        }
+
+        .door-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+        }
+
+        .door-frame {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 2px solid var(--door-frame);
+            border-bottom: none;
+            border-radius: 20px 20px 0 0; /* Arch shape */
+            background: rgba(0,0,0,0.3);
+            box-shadow: 0 0 15px var(--primary);
+            z-index: 1;
+        }
+
+        /* The glowing light inside/behind the door */
+        .door-portal {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            right: 2px;
+            bottom: 0;
+            background: radial-gradient(circle, #fff, var(--primary));
+            border-radius: 18px 18px 0 0;
+            opacity: 0.6;
+            z-index: 0;
+            box-shadow: inset 0 0 10px var(--primary);
+        }
+
+        /* The actual moving door */
+        .door-panel {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #4a0e19, #2b0a12);
+            border: 1px solid rgba(255, 143, 163, 0.3);
+            border-radius: 18px 18px 0 0;
+            transform-origin: left center; /* Hinge on the left */
+            transition: transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
+            z-index: 2;
+            display: flex;
+            align-items: center;
+        }
+
+        .door-knob {
+            position: absolute;
+            right: 6px;
+            width: 6px;
+            height: 6px;
+            background: #ffd700; /* Gold */
+            border-radius: 50%;
+            box-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        /* Hover Effect: Crack open slightly */
+        .node:hover .door-panel {
+            transform: rotateY(-25deg);
+            box-shadow: -5px 0 15px rgba(255, 77, 109, 0.5);
+        }
+
+        /* Open State: Fully open */
+        .node.open .door-panel {
+            transform: rotateY(-110deg);
+        }
+
+        .node-info {
+            position: absolute;
+            top: 70px; /* Moved down below the taller door */
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            pointer-events: none;
+            transition: opacity 0.5s;
+            text-align: center;
+        }
+
+        .node-date {
+            font-family: 'Cinzel', serif;
+            font-size: 0.8rem;
+            color: #ff8fa3;
+            background: rgba(0,0,0,0.6);
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-bottom: 4px;
+            white-space: nowrap;
+        }
+
+        .node-label {
+            font-family: 'Great Vibes', cursive;
+            font-size: 1.5rem;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            white-space: nowrap;
+        }
+
+        .memory-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            width: 90vw;
+            max-width: 400px;
+            background: var(--glass);
+            border: 1px solid rgba(255, 77, 109, 0.3);
+            border-radius: 20px;
+            padding: 0;
+            opacity: 0;
+            pointer-events: none;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            backdrop-filter: blur(15px);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            z-index: 100; /* Ensure content is above door when zoomed */
+        }
+
+        @media (min-width: 768px) {
+            .memory-content {
+                width: 750px;
+                max-width: 750px;
+                flex-direction: row;
+                height: 500px;
+            }
+        }
+
+        .memory-content.active {
+            pointer-events: auto;
+        }
+
+        .memory-img {
+            width: 100%;
+            height: 300px;
+            object-fit: contain;
+            object-position: center;
+            background: #000;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            flex-shrink: 0;
+        }
+
+        @media (min-width: 768px) {
+            .memory-img {
+                width: 50%;
+                height: 100%;
+                border-bottom: none;
+                border-right: 1px solid rgba(255,255,255,0.1);
+            }
+        }
+
+        .memory-text {
+            padding: 25px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .zoom-out-btn {
+            position: absolute;
+            bottom: 100px;
+            right: 20px;
+            background: var(--primary);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            box-shadow: 0 4px 15px rgba(255, 77, 109, 0.4);
+            transform: translateY(150px);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        @media (min-width: 768px) {
+            .zoom-out-btn {
+                bottom: 30px;
+                right: 30px;
+                padding: 12px 24px;
+                font-size: 1rem;
+            }
+        }
+
+        .zoom-out-btn.visible {
+            transform: translateY(0);
+        }
+
+        .nav-arrows {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(150px);
+            display: flex;
+            gap: 20px;
+            transition: transform 0.4s;
+        }
+
+        .nav-arrows.visible {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .arrow-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .arrow-btn:hover {
+            background: var(--primary);
+            transform: scale(1.1);
+        }
+
+        .title-overlay {
+            position: absolute;
+            top: 40px;
+            left: 40px;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+
+        .timer-badge {
+            font-family: 'Cinzel', serif;
+            font-size: 0.8rem;
+            color: var(--primary);
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+        }
+
+        .instructions {
+            position: absolute;
+            bottom: 40px;
+            left: 40px;
+            color: rgba(255,255,255,0.5);
+            font-size: 0.9rem;
+            animation: fadeInOut 4s infinite;
+        }
+
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.8; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- INTRO SCREEN -->
+    <!-- Background Music -->
+    <audio id="bg-music" loop>
+        <source src="careless whisper - george michael (slowed).mp3" type="audio/mpeg">
+    </audio>
+
+    <div id="intro-screen">
+        <div class="intro-card">
+            <div class="intro-img-frame">
+                <img src="image.png" alt="Intro" style="width:100%; height:100%; object-fit:cover;">
+            </div>
+            <h1 class="text-5xl md:text-7xl mb-4 text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-red-600" style="font-family: 'Great Vibes'">Our Love Story</h1>
+            <p class="text-gray-300 text-lg mb-8 leading-relaxed max-w-md mx-auto">
+                "Je moet gewoon harder paddelen!"<br>
+                Klik op de deuren om onze herinneringen te openen.
+            </p>
+            <button class="start-btn" onclick="startExperience()">
+                Begin Journey <i class="fas fa-arrow-right ml-2"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- UI Overlay Layer -->
+    <div class="ui-layer" id="ui-layer">
+        <div class="title-overlay" id="main-title">
+            <div class="timer-badge">SINDS 1 DECEMBER 2024</div>
+            <h1 style="font-family: 'Great Vibes'; font-size: 3rem; margin: 0; text-shadow: 0 4px 10px black;">Onze Tijdlijn</h1>
+            <div id="live-timer" class="font-mono text-xs text-gray-400 mt-2"></div>
+        </div>
+
+        <div class="instructions" id="instructions">
+            <i class="fas fa-mouse-pointer"></i> Drag to explore • Click Doors to Open
+        </div>
+
+        <div class="nav-arrows" id="nav-controls">
+            <div class="interactive-btn arrow-btn" id="btn-prev">
+                <i class="fas fa-chevron-left"></i>
+            </div>
+            <div class="interactive-btn arrow-btn" id="btn-next">
+                <i class="fas fa-chevron-right"></i>
+            </div>
+        </div>
+
+        <button class="interactive-btn zoom-out-btn" id="btn-zoom-out">
+            <i class="fas fa-compress-arrows-alt"></i> Back to Timeline
+        </button>
+    </div>
+
+    <!-- The Viewport (Camera) -->
+    <div id="viewport">
+        <!-- The World (Content) -->
+        <div id="world">
+            <canvas id="bg-canvas"></canvas>
+
+            <svg class="connections">
+                <path id="timeline-path" class="connection-path" d="" />
+            </svg>
+
+            <!-- 1. The Beginning -->
+            <div class="node" data-x="300" data-y="300">
+                <div class="door-container">
+                    <div class="door-frame"></div>
+                    <div class="door-portal"></div>
+                    <div class="door-panel"><div class="door-knob"></div></div>
+                </div>
+                <div class="node-info"><div class="node-date">17 september 2024</div><div class="node-label">Bumble Match</div></div>
+                <div class="memory-content shadow-2xl">
+                    <img src="1.png" class="memory-img">
+                    <div class="memory-text">
+                        <h2 class="text-3xl text-pink-400 font-serif mb-2">The First Date</h2>
+                        <p class="text-sm text-gray-300">Dit is de dag dat we gematcht werden op bumble. aan het sparren over internetgekkies onze eerste echte connectie. kort daarna kwam de eerste date. Dit is de start geweest</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. First Trip -->
+            <div class="node" data-x="800" data-y="400">
+                <div class="door-container">
+                    <div class="door-frame"></div>
+                    <div class="door-portal"></div>
+                    <div class="door-panel"><div class="door-knob"></div></div>
+                </div>
+                <div class="node-info"><div class="node-date">16 november 2024</div><div class="node-label">Sushi Date</div></div>
+                <div class="memory-content shadow-2xl">
+                    <img src="2.png" class="memory-img">
+                    <div class="memory-text">
+                        <h2 class="text-3xl text-pink-400 font-serif mb-2">Sushi Date</h2>
+                        <p class="text-sm text-gray-300">Op deze dag hadden we beide zin in sushi maar jij had geen geld dus. Dus dit etentje was helemaal op mijn kosten en blij dat je was!</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Dinner -->
+            <div class="node" data-x="1300" data-y="300">
+                <div class="door-container">
+                    <div class="door-frame"></div>
+                    <div class="door-portal"></div>
+                    <div class="door-panel"><div class="door-knob"></div></div>
+                </div>
+                <div class="node-info"><div class="node-date">30 november 2024</div><div class="node-label">SIM Concert</div></div>
+                <div class="memory-content shadow-2xl">
+                    <img src="3.png" class="memory-img">
+                    <div class="memory-text">
+                        <h2 class="text-3xl text-pink-400 font-serif mb-2">SIM Concert</h2>
+                        <p class="text-sm text-gray-300">Het SIM Concert waar ik last minute nog tickets voor je had kunnen regelen. Dit was voor mij het moment om het officieel te maken. Ik wou jou vragen en het afsluiten met een shotje op het eind. Maar helaas had je dit afgewezen. Nu moest ik wachten tot kerst voor mijn volgende kans maar niks bleek minder waar te zijn</p>
+                    </div>
+                </div>
+            </div>
+
+             <!-- 4. Movie Night -->
+             <div class="node" data-x="1800" data-y="450">
+                 <div class="door-container">
+                    <div class="door-frame"></div>
+                    <div class="door-portal"></div>
+                    <div class="door-panel"><div class="door-knob"></div></div>
+                </div>
+                <div class="node-info"><div class="node-date">1 december 2024</div><div class="node-label">Officieel!</div></div>
+                <div class="memory-content shadow-2xl">
+                    <img src="4.png" class="memory-img">
+                    <div class="memory-text">
+                        <h2 class="text-3xl text-pink-400 font-serif mb-2">Officieel!</h2>
+                        <p class="text-sm text-gray-300">De dag dat het officieel werd! Waarin jij zei in de auto op de parkeerplaats voor je huis: "Falco, ik kan niet langer wachten". Ook aan mijn kant was het een dikke ja. Dit was de start van de relatie</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. Concert -->
+            <div class="node" data-x="2300" data-y="600">
+                 <div class="door-container">
+                    <div class="door-frame"></div>
+                    <div class="door-portal"></div>
+                    <div class="door-panel"><div class="door-knob"></div></div>
+                </div>
+                <div class="node-info"><div class="node-date">31 december 2024</div><div class="node-label">Nieuwjaar</div></div>
+                <div class="memory-content shadow-2xl">
+                    <img src="5.png" class="memory-img">
+                    <div class="memory-text">
+                        <h2 class="text-3xl text-pink-400 font-serif mb-2">Nieuwjaar</h2>
+                        <p class="text-sm text-gray-300">Onze eerste Nieuwjaar viering bij casper in Dussen. Wat een leuke ervaring was dit. Karbiet schieten, Flink zuipen en natuurlijk samen op een luchtbed slapen. En natuurlijk niet te vergeten de opgeblazen caravan en de uit de grond gehaalde paal door bram</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. Hiking -->
+            <div class="node" data-x="2500" data-y="1100">
+                 <div class="door-container">
+                    <div class="door-frame"></div>
+                    <div class="door-portal"></div>
+                    <div class="door-panel"><div class="door-knob"></div></div>
+                </div>
+                <div class="node-info"><div class="node-date">13 Jan 2025</div><div class="node-label">België</div></div>
+                <div class="memory-content shadow-2xl">
+                    <img src="6.png" class="memory-img">
+                    <div class="memory-text">
+                        <h2 class="text-3xl text-pink-400 font-serif mb-2">België</h2>
+                        <p class="text-sm text-gray-300">Onze eerste mini vakantie met de band naar Belgie. Dit was zo een leuke avond en eentje die ik nooit zal vergeten. Helaas kon ik maar 1 dag blijven want mason kwam naar nederland.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 7. Birthday -->
+            <div class="node" data-x="1900" data-y="1200">
+                 <div class="door-container">
+                    <div class="door-frame"></div>
+                    <div class="door-portal"></div>
+                    <div class="door-panel"><div class="door-knob"></div></div>
+                </div>
+                <div class="node-info"><div class="node-date">8 Februari 2025</div><div class="node-label">Lopik</div></div>
+                <div class="memory-content shadow-2xl">
+                    <img src="7.png" class="memory-img">
+                    <div class="memory-text">
+                        <h2 class="text-3xl text-pink-400 font-serif mb-2">Optreden Lopik</h2>
+                        <p class="text-sm text-gray-300">Je eerste optreden in lopik. Ik stond hier echt als een trots vriend. Je straalde echt. Dit was ook een moment voor mij waarvan ik dacht. Ja ik heb de juiste keuze gemaakt! Dit was ook een super avond ondanks de rare kerel</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 8. Rainy Day -->
+            <div class="node" data-x="1300" data-y="1000">
+                 <div class="door-container">
+                    <div class="door-frame"></div>
+                    <div class="door-portal"></div>
+                    <div class="door-panel"><div class="door-knob"></div></div>
+                </div>
+                <div class="node-info"><div class="node-date">6 maart 2025</div><div class="node-label">Scheveningen</div></div>
+                <div class="memory-content shadow-2xl">
+                    <img src="8.png" class="memory-img">
+                    <div class="memory-text">
+                        <h2 class="text-3xl text-pink-400 font-serif mb-2">Scheveningen</h2>
+                        <p class="text-sm text-gray-300">Hier gingen we naar scheveningen om de lunch tegoedkaart te gebruiken die we voor kerst hadden gehad van je moeder. Lekker met open dak rijden richting scheveningen. Super lekker gegeten, Seaworld gezien en in de veel te duren reuze rad hebben gezeten.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 9. Surprise -->
+            <div class="node" data-x="700" data-y="1200">
+                 <div class="door-container">
+                    <div class="door-frame"></div>
+                    <div class="door-portal"></div>
+                    <div class="door-panel"><div class="door-knob"></div></div>
+                </div>
+                <div class="node-info"><div class="node-date">10 mei 2025</div><div class="node-label">Shrek!</div></div>
+                <div class="memory-content shadow-2xl">
+                    <img src="9.png" class="memory-img">
+                    <div class="memory-text">
+                        <h2 class="text-3xl text-pink-400 font-serif mb-2">Shrek de Musical</h2>
+                        <p class="text-sm text-gray-300">Shrek de musical! Dit weekend gingen we naar Shrek de musical. We konden blijven slapen bij je opa en oma wat super lief was en gezellig. Voordat we naar de musical gingen liepen we eerst nog door alkmaar en daar hadden we ook dat super goede ijs op! Daarna gingen we naar de musical wat zo leuk was om te zien en om het daarna af te sluiten met een foto met de enige echte was helemaal top</p>
+                    </div>
+                </div>
+            </div>
+
+             <!-- 10. Late Night -->
+             <div class="node" data-x="500" data-y="1700">
+                 <div class="door-container">
+                    <div class="door-frame"></div>
+                    <div class="door-portal"></div>
+                    <div class="door-panel"><div class="door-knob"></div></div>
+                </div>
+                <div class="node-info"><div class="node-date">15 maart 2025</div><div class="node-label">Battle!</div></div>
+                <div class="memory-content shadow-2xl">
+                    <img src="10.png" class="memory-img">
+                    <div class="memory-text">
+                        <h2 class="text-3xl text-pink-400 font-serif mb-2">Battle of the Bands</h2>
+                        <p class="text-sm text-gray-300">Battle of the bands. Hier speelde jullie en OORPIJN won de publieks prijs zwaar verdiend. helaas niet in de rankings maar wel een mooie trofee in de pocket. Ook hier was het zo leuk om je helemaal in je element te zien. Ik had hier wel een THATS MY GIRLFRIEND! moment</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 11. Family -->
+            <div class="node" data-x="1200" data-y="1800">
+                 <div class="door-container">
+                    <div class="door-frame"></div>
+                    <div class="door-portal"></div>
+                    <div class="door-panel"><div class="door-knob"></div></div>
+                </div>
+                <div class="node-info"><div class="node-date">26 juni 2025</div><div class="node-label">Linkin Park</div></div>
+                <div class="memory-content shadow-2xl">
+                    <img src="11.png" class="memory-img">
+                    <div class="memory-text">
+                        <h2 class="text-3xl text-pink-400 font-serif mb-2">Linkin Park Concert</h2>
+                        <p class="text-sm text-gray-300">Linkin park concert. Het concert wat al lang gepland was in het begin. Toen Johan mij belde of wij mee wouden zei jij meteen ja en ja en nog eens ja. Johan heeft dit ooit voor ons kunnen regelen. Dit was ook weer een super leuke ervaring met jou.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 12. Anniversary -->
+            <div class="node" data-x="2000" data-y="1700">
+                 <div class="door-container">
+                    <div class="door-frame"></div>
+                    <div class="door-portal"></div>
+                    <div class="door-panel"><div class="door-knob"></div></div>
+                </div>
+                <div class="node-info"><div class="node-date">27 Juli 2025</div><div class="node-label">Amerika</div></div>
+                <div class="memory-content shadow-2xl">
+                    <img src="12.png" class="memory-img">
+                    <div class="memory-text">
+                        <h2 class="text-3xl text-pink-400 font-serif mb-2">Amerika Vakantie</h2>
+                        <p class="text-sm text-gray-300">Onze eerste echte grote vakantie naar Amerika. Het was erg spannend voor mij om te zien hoe jij met mijn vrienden om zou gaan. Maar gelukkig ging dat allemaal goed en hadden we een super leuke tijd. Ookal was het de eerste dag even billen knijpen en opruimen</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 13. Lazy Sunday -->
+            <div class="node" data-x="2500" data-y="1900">
+                <div class="door-container">
+                    <div class="door-frame"></div>
+                    <div class="door-portal"></div>
+                    <div class="door-panel"><div class="door-knob"></div></div>
+                </div>
+                <div class="node-info"><div class="node-date">6 Augustus 2025</div><div class="node-label">Afscheid</div></div>
+                <div class="memory-content shadow-2xl">
+                    <img src="13.png" class="memory-img">
+                    <div class="memory-text">
+                        <h2 class="text-3xl text-pink-400 font-serif mb-2">Afscheid Amerika</h2>
+                        <p class="text-sm text-gray-300">Het einde jouw 2 week durende vakantie en die sloten we letterlijk knallend af. Ik moest jouw helemaal alleen naar de airport brengen en afscheid nemen. wat erg jammer was omdat we je vlucht niet om konden boeken. De volgende als we gaan naar amerika blijven we langer.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 14. Road Trip 2 -->
+            <div class="node" data-x="1800" data-y="2200">
+                <div class="door-container">
+                    <div class="door-frame"></div>
+                    <div class="door-portal"></div>
+                    <div class="door-panel"><div class="door-knob"></div></div>
+                </div>
+                <div class="node-info"><div class="node-date">21 september 2025</div><div class="node-label">Castlefest</div></div>
+                <div class="memory-content shadow-2xl">
+                    <img src="img14.png" class="memory-img">
+                    <div class="memory-text">
+                        <h2 class="text-3xl text-pink-400 font-serif mb-2">Castlefest</h2>
+                        <p class="text-sm text-gray-300">Castlefest! We moesten een wel een tering eind rijden maar dan waren we wel op een mooie locatie met een mooie elf (jij). Dit was super leuk om is een keer samen mee te maken. Ik denk dat ik die hele dag wel 300 fotos heb gemaakt</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 15. Festival -->
+            <div class="node" data-x="1000" data-y="2300">
+                <div class="door-container">
+                    <div class="door-frame"></div>
+                    <div class="door-portal"></div>
+                    <div class="door-panel"><div class="door-knob"></div></div>
+                </div>
+                <div class="node-info"><div class="node-date">19 oktober 2025</div><div class="node-label">Walibi</div></div>
+                <div class="memory-content shadow-2xl">
+                    <img src="15.png" class="memory-img">
+                    <div class="memory-text">
+                        <h2 class="text-3xl text-pink-400 font-serif mb-2">Walibi Frightnight</h2>
+                        <p class="text-sm text-gray-300">Ja walibi Frightnight. Het spookhuis was wel leuk en jij. Maar dat was het wel</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 16. Emo Night -->
+            <div class="node" data-x="400" data-y="2100">
+                <div class="door-container">
+                    <div class="door-frame"></div>
+                    <div class="door-portal"></div>
+                    <div class="door-panel"><div class="door-knob"></div></div>
+                </div>
+                <div class="node-info"><div class="node-date">2 november 2025</div><div class="node-label">Emo Night</div></div>
+                <div class="memory-content shadow-2xl">
+                    <img src="img16.png" class="memory-img">
+                    <div class="memory-text">
+                        <h2 class="text-3xl text-pink-400 font-serif mb-2">Emo Night Halloween</h2>
+                        <p class="text-sm text-gray-300">Emo night halloween. het feest waar jij naar toe ging toen we gematcht waren en daardoor niet in het weekend kon afspreken en nu staan we der met ze 2en. Erg leuke avond. Vooral de fiets tocht naar houten. Met 2 jassen</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 17. The Future -->
+            <div class="node" data-x="600" data-y="2400">
+                <div class="door-container">
+                    <div class="door-frame" style="box-shadow: 0 0 25px white;"></div>
+                    <div class="door-portal" style="background: radial-gradient(circle, white, cyan);"></div>
+                    <div class="door-panel" style="background: linear-gradient(135deg, #1a2a3a, #0d161f);"><div class="door-knob"></div></div>
+                </div>
+                <div class="node-info"><div class="node-date">Toekomst</div><div class="node-label">What's Next?</div></div>
+                <div class="memory-content shadow-2xl">
+                    <div class="bg-gray-900 memory-img flex items-center justify-center">
+                        <i class="fas fa-infinity text-6xl text-cyan-400"></i>
+                    </div>
+                    <div class="memory-text">
+                        <h2 class="text-3xl text-cyan-400 font-serif mb-2">De Toekomst</h2>
+                        <p class="text-sm text-gray-300">Ik kan niet wachten om te zien wat het volgende jaar ons brengt.</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURATION ---
+        const WORLD_WIDTH = 3000;
+        const WORLD_HEIGHT = 2500; // Updated height
+        let isZoomed = false;
+        let currentNodeIndex = -1;
+
+        // --- DOM ELEMENTS ---
+        const world = document.getElementById('world');
+        const nodes = document.querySelectorAll('.node');
+        const path = document.getElementById('timeline-path');
+        const zoomOutBtn = document.getElementById('btn-zoom-out');
+        const btnPrev = document.getElementById('btn-prev');
+        const btnNext = document.getElementById('btn-next');
+        const navControls = document.getElementById('nav-controls');
+        const mainTitle = document.getElementById('main-title');
+        const instructions = document.getElementById('instructions');
+        const uiLayer = document.getElementById('ui-layer');
+        const introScreen = document.getElementById('intro-screen');
+
+        // --- 0. INTRO LOGIC ---
+        const bgMusic = document.getElementById('bg-music');
+        bgMusic.volume = 0.5; // Set volume to 50%
+
+        window.startExperience = function() {
+            // Start background music
+            bgMusic.play();
+
+            // Fade out intro
+            introScreen.classList.add('hidden-fade');
+
+            // Fade in UI
+            uiLayer.classList.add('visible');
+
+            // Initial zoom out animation
+            setTimeout(() => {
+                zoomOut();
+            }, 100);
+        }
+
+        // --- 1. INITIALIZE POSITIONS ---
+        const nodePositions = [];
+
+        nodes.forEach((node, index) => {
+            const x = parseInt(node.dataset.x);
+            const y = parseInt(node.dataset.y);
+            nodePositions.push({x, y, el: node});
+
+            node.style.left = x + 'px';
+            node.style.top = y + 'px';
+
+            node.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if(currentNodeIndex !== index) {
+                    zoomToNode(index);
+                }
+            });
+        });
+
+        // --- 2. DRAW SVG PATH ---
+        function drawPath() {
+            if(nodePositions.length === 0) return;
+            let d = `M ${nodePositions[0].x} ${nodePositions[0].y}`;
+            for(let i=1; i<nodePositions.length; i++) {
+                const prev = nodePositions[i-1];
+                const curr = nodePositions[i];
+                // Slightly more complex curve logic for snaking path
+                const cp1x = prev.x + (curr.x - prev.x) / 2;
+                const cp1y = prev.y; // horizontal out
+                const cp2x = prev.x + (curr.x - prev.x) / 2;
+                const cp2y = curr.y; // vertical/horizontal in
+
+                // Simple smooth curve
+                const midX = (prev.x + curr.x) / 2;
+                const midY = (prev.y + curr.y) / 2;
+
+                // Let's use simple mid-point bezier
+                d += ` Q ${midX} ${prev.y} ${midX} ${midY} T ${curr.x} ${curr.y}`;
+            }
+            path.setAttribute('d', d);
+        }
+        drawPath();
+
+        // --- 3. DRAGGABLE WORLD (GSAP) ---
+        function updateDraggableBounds() {
+            const currentScale = gsap.getProperty(world, "scale") || 1;
+            const scaledWidth = WORLD_WIDTH * currentScale;
+            const scaledHeight = WORLD_HEIGHT * currentScale;
+
+            return {
+                minX: Math.min(0, -scaledWidth + window.innerWidth),
+                minY: Math.min(0, -scaledHeight + window.innerHeight),
+                maxX: Math.max(0, window.innerWidth - scaledWidth),
+                maxY: Math.max(0, window.innerHeight - scaledHeight)
+            };
+        }
+
+        let draggable = Draggable.create(world, {
+            type: "x,y",
+            bounds: updateDraggableBounds(),
+            inertia: true,
+            onDragStart: () => document.body.style.cursor = 'grabbing',
+            onDragEnd: () => document.body.style.cursor = 'default',
+            onPress: function() {
+                this.applyBounds(updateDraggableBounds());
+            }
+        })[0];
+
+        // --- MOUSE WHEEL ZOOM ---
+        const MIN_SCALE = 0.3;
+        const MAX_SCALE = 3;
+
+        document.getElementById('viewport').addEventListener('wheel', (e) => {
+            if (isZoomed) return; // Don't zoom when viewing a memory
+
+            e.preventDefault();
+
+            const currentScale = gsap.getProperty(world, "scale") || 1;
+            const delta = e.deltaY > 0 ? -0.1 : 0.1;
+            let newScale = currentScale + delta;
+            newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
+
+            // Get mouse position relative to viewport
+            const rect = document.getElementById('viewport').getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            // Get current world position
+            const currentX = gsap.getProperty(world, "x") || 0;
+            const currentY = gsap.getProperty(world, "y") || 0;
+
+            // Calculate the point on the world under the mouse
+            const worldMouseX = (mouseX - currentX) / currentScale;
+            const worldMouseY = (mouseY - currentY) / currentScale;
+
+            // Calculate new position to keep mouse point stationary
+            const newX = mouseX - worldMouseX * newScale;
+            const newY = mouseY - worldMouseY * newScale;
+
+            gsap.to(world, {
+                scale: newScale,
+                x: newX,
+                y: newY,
+                duration: 0.2,
+                ease: "power2.out",
+                onComplete: function() {
+                    if(draggable) draggable.applyBounds(updateDraggableBounds());
+                }
+            });
+        }, { passive: false });
+
+        // --- 4. BUTTON EVENT LISTENERS ---
+        zoomOutBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            zoomOut();
+        });
+
+        btnPrev.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if(currentNodeIndex > 0) zoomToNode(currentNodeIndex - 1);
+            else zoomToNode(nodePositions.length - 1);
+        });
+
+        btnNext.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if(currentNodeIndex < nodePositions.length - 1) zoomToNode(currentNodeIndex + 1);
+            else zoomToNode(0);
+        });
+
+        // --- 5. ZOOM LOGIC ---
+        function zoomToNode(index) {
+            isZoomed = true;
+            currentNodeIndex = index;
+            if(draggable) draggable.disable();
+
+            // 1. Close any previously open doors first (if switching directly)
+            document.querySelectorAll('.node.open').forEach(el => el.classList.remove('open'));
+
+            const target = nodePositions[index];
+
+            // Open THIS door immediately
+            target.el.classList.add('open');
+
+            const isMobile = window.innerWidth < 768;
+            const targetScale = isMobile ? 3 : 4;
+
+            const centerX = window.innerWidth / 2;
+            const centerY = window.innerHeight / 2;
+            const targetX = centerX - (target.x * targetScale);
+            const targetY = centerY - (target.y * targetScale);
+
+            gsap.to(world, {
+                x: targetX,
+                y: targetY,
+                scale: targetScale,
+                duration: 1.5,
+                ease: "power4.inOut"
+            });
+
+            // Toggle UI
+            mainTitle.style.opacity = '0';
+            instructions.style.opacity = '0';
+            zoomOutBtn.classList.add('visible');
+            navControls.classList.add('visible');
+
+            // Handle Content
+            document.querySelectorAll('.memory-content').forEach(c => {
+                c.classList.remove('active');
+                gsap.to(c, { scale: 0, opacity: 0, duration: 0.3 });
+            });
+
+            const content = target.el.querySelector('.memory-content');
+            content.classList.add('active');
+
+            // Delay content reveal slightly so we see door open first
+            gsap.fromTo(content,
+                { scale: 0, opacity: 0 },
+                { scale: 1 / targetScale, opacity: 1, duration: 0.8, delay: 0.8, ease: "back.out(1.7)" }
+            );
+
+            gsap.to('.node-info', { opacity: 0, duration: 0.5 });
+        }
+
+        function zoomOut() {
+            isZoomed = false;
+            currentNodeIndex = -1;
+            if(draggable) draggable.enable();
+
+            // Close all doors
+            document.querySelectorAll('.node.open').forEach(el => el.classList.remove('open'));
+
+            const fitScale = Math.min(window.innerWidth / WORLD_WIDTH, window.innerHeight / WORLD_HEIGHT) * 1.2;
+            const targetScale = Math.max(fitScale, 0.5);
+
+            // Center map relative to view
+            const centerX = (window.innerWidth - WORLD_WIDTH * targetScale) / 2;
+            const centerY = (window.innerHeight - WORLD_HEIGHT * targetScale) / 2;
+
+            gsap.to(world, {
+                x: centerX,
+                y: centerY,
+                scale: targetScale,
+                duration: 1.5,
+                ease: "power2.inOut",
+                onComplete: function() {
+                    if(draggable) draggable.applyBounds(updateDraggableBounds());
+                }
+            });
+
+            // Toggle UI
+            document.querySelectorAll('.memory-content').forEach(c => {
+                c.classList.remove('active');
+                gsap.to(c, { scale: 0, opacity: 0, duration: 0.3 });
+            });
+
+            zoomOutBtn.classList.remove('visible');
+            navControls.classList.remove('visible');
+            mainTitle.style.opacity = '1';
+            instructions.style.opacity = '1';
+
+            gsap.to('.node-info', { opacity: 1, duration: 0.5, delay: 0.5 });
+        }
+
+        // --- 6. BACKGROUND PARTICLES (LOVE THEME) ---
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = WORLD_WIDTH;
+        canvas.height = WORLD_HEIGHT;
+
+        const particles = [];
+        for(let i=0; i<300; i++) {
+            particles.push({
+                x: Math.random() * WORLD_WIDTH,
+                y: Math.random() * WORLD_HEIGHT,
+                size: Math.random() * 3,
+                alpha: Math.random(),
+                hue: Math.random() > 0.5 ? 340 : (Math.random() > 0.5 ? 355 : 0),
+                speed: Math.random() * 0.2
+            });
+        }
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            particles.forEach(p => {
+                ctx.fillStyle = `hsla(${p.hue}, 100%, 70%, ${p.alpha})`;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+                ctx.fill();
+                p.y -= p.speed;
+                if(p.y < 0) p.y = WORLD_HEIGHT;
+                p.alpha += (Math.random() - 0.5) * 0.02;
+                if(p.alpha < 0.1) p.alpha = 0.1;
+                if(p.alpha > 0.8) p.alpha = 0.8;
+            });
+            requestAnimationFrame(animateParticles);
+        }
+        animateParticles();
+
+        // Timer
+        const startDate = new Date(2024, 11, 1); // December 1, 2024 (month is 0-indexed)
+        function updateTimer() {
+            const now = new Date();
+            const diff = now - startDate;
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            document.getElementById('live-timer').innerText = `${days} Dagen Samen`;
+        }
+        setInterval(updateTimer, 1000);
+
+        // NOTE: onload is handled in the startExperience button now,
+        // but we can set initial positions if needed.
+        // We'll leave the world at 0,0 scale 1 initially hidden by intro.
+
+    </script>
+</body>
+</html>
