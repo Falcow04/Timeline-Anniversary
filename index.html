@@ -37,7 +37,8 @@
             font-family: 'Montserrat', sans-serif;
             width: 100vw;
             height: 100vh;
-            touch-action: pan-x pan-y pinch-zoom;
+            touch-action: manipulation;
+            -webkit-text-size-adjust: 100%;
         }
 
         /* --- INTRO SCREEN --- */
@@ -298,12 +299,12 @@
 
         .memory-content {
             position: absolute;
-            top: 55%;
+            top: 50%;
             left: 50%;
             transform: translate(-50%, -50%) scale(0);
             width: 90vw;
             max-width: 400px;
-            max-height: calc(100vh - 100px);
+            max-height: calc(100vh - 160px);
             background: var(--glass);
             border: 1px solid rgba(255, 77, 109, 0.3);
             border-radius: 20px;
@@ -321,7 +322,6 @@
 
         @media (min-width: 768px) {
             .memory-content {
-                top: 50%;
                 width: 750px;
                 max-width: 750px;
                 max-height: 500px;
@@ -363,9 +363,8 @@
 
         .zoom-out-btn {
             position: absolute;
-            top: 20px;
-            right: 20px;
-            bottom: auto;
+            bottom: 30px;
+            left: 50%;
             background: var(--primary);
             color: white;
             padding: 10px 20px;
@@ -373,7 +372,7 @@
             font-weight: bold;
             font-size: 0.85rem;
             box-shadow: 0 4px 15px rgba(255, 77, 109, 0.4);
-            transform: translateY(-100px);
+            transform: translateX(-50%) translateY(100px);
             transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             border: none;
             display: flex;
@@ -383,22 +382,20 @@
 
         @media (min-width: 768px) {
             .zoom-out-btn {
-                top: 30px;
-                right: 30px;
+                bottom: 40px;
                 padding: 12px 24px;
                 font-size: 1rem;
             }
         }
 
         .zoom-out-btn.visible {
-            transform: translateY(0);
+            transform: translateX(-50%) translateY(0);
         }
 
         .nav-arrows {
             position: absolute;
             top: 20px;
             left: 50%;
-            bottom: auto;
             transform: translateX(-50%) translateY(-100px);
             display: flex;
             gap: 20px;
@@ -963,6 +960,72 @@
                 }
             });
         }, { passive: false });
+
+        // --- TOUCH PINCH ZOOM ---
+        let initialPinchDistance = null;
+        let initialScale = 1;
+        const viewport = document.getElementById('viewport');
+
+        viewport.addEventListener('touchstart', (e) => {
+            if (isZoomed) return;
+            if (e.touches.length === 2) {
+                e.preventDefault();
+                initialPinchDistance = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                initialScale = gsap.getProperty(world, "scale") || 1;
+            }
+        }, { passive: false });
+
+        viewport.addEventListener('touchmove', (e) => {
+            if (isZoomed) return;
+            if (e.touches.length === 2 && initialPinchDistance !== null) {
+                e.preventDefault();
+
+                const currentDistance = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+
+                const scaleChange = currentDistance / initialPinchDistance;
+                let newScale = initialScale * scaleChange;
+                newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
+
+                // Get center point between two fingers
+                const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+                const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+
+                const rect = viewport.getBoundingClientRect();
+                const pinchX = centerX - rect.left;
+                const pinchY = centerY - rect.top;
+
+                // Get current world position
+                const currentX = gsap.getProperty(world, "x") || 0;
+                const currentY = gsap.getProperty(world, "y") || 0;
+
+                // Calculate the point on the world under the pinch center
+                const worldPinchX = (pinchX - currentX) / initialScale;
+                const worldPinchY = (pinchY - currentY) / initialScale;
+
+                // Calculate new position to keep pinch center stationary
+                const newX = pinchX - worldPinchX * newScale;
+                const newY = pinchY - worldPinchY * newScale;
+
+                gsap.set(world, {
+                    scale: newScale,
+                    x: newX,
+                    y: newY
+                });
+            }
+        }, { passive: false });
+
+        viewport.addEventListener('touchend', (e) => {
+            if (e.touches.length < 2) {
+                initialPinchDistance = null;
+                if(draggable) draggable.applyBounds(updateDraggableBounds());
+            }
+        });
 
         // --- 4. BUTTON EVENT LISTENERS ---
         zoomOutBtn.addEventListener('click', (e) => {
