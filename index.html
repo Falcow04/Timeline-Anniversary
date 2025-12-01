@@ -928,7 +928,7 @@
             e.preventDefault();
 
             const currentScale = gsap.getProperty(world, "scale") || 1;
-            const delta = e.deltaY > 0 ? -0.1 : 0.1;
+            const delta = e.deltaY > 0 ? -0.2 : 0.2;
             let newScale = currentScale + delta;
             newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
 
