@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <title>1 jaar samen - timeline</title>
 
     <!-- Tailwind CSS -->
@@ -298,11 +298,12 @@
 
         .memory-content {
             position: absolute;
-            top: 50%;
+            top: 55%;
             left: 50%;
             transform: translate(-50%, -50%) scale(0);
             width: 90vw;
             max-width: 400px;
+            max-height: calc(100vh - 100px);
             background: var(--glass);
             border: 1px solid rgba(255, 77, 109, 0.3);
             border-radius: 20px;
@@ -312,6 +313,7 @@
             box-shadow: 0 0 50px rgba(0,0,0,0.8);
             backdrop-filter: blur(15px);
             overflow: hidden;
+            overflow-y: auto;
             display: flex;
             flex-direction: column;
             z-index: 100; /* Ensure content is above door when zoomed */
@@ -319,8 +321,10 @@
 
         @media (min-width: 768px) {
             .memory-content {
+                top: 50%;
                 width: 750px;
                 max-width: 750px;
+                max-height: 500px;
                 flex-direction: row;
                 height: 500px;
             }
@@ -359,8 +363,9 @@
 
         .zoom-out-btn {
             position: absolute;
-            bottom: 100px;
+            top: 20px;
             right: 20px;
+            bottom: auto;
             background: var(--primary);
             color: white;
             padding: 10px 20px;
@@ -368,7 +373,7 @@
             font-weight: bold;
             font-size: 0.85rem;
             box-shadow: 0 4px 15px rgba(255, 77, 109, 0.4);
-            transform: translateY(150px);
+            transform: translateY(-100px);
             transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             border: none;
             display: flex;
@@ -378,7 +383,7 @@
 
         @media (min-width: 768px) {
             .zoom-out-btn {
-                bottom: 30px;
+                top: 30px;
                 right: 30px;
                 padding: 12px 24px;
                 font-size: 1rem;
@@ -391,9 +396,10 @@
 
         .nav-arrows {
             position: absolute;
-            bottom: 30px;
+            top: 20px;
             left: 50%;
-            transform: translateX(-50%) translateY(150px);
+            bottom: auto;
+            transform: translateX(-50%) translateY(-100px);
             display: flex;
             gap: 20px;
             transition: transform 0.4s;
