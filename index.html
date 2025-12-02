@@ -867,6 +867,29 @@
                     zoomToNode(index);
                 }
             });
+
+            // Touch support for Android
+            let touchStartTime = 0;
+            let touchStartPos = { x: 0, y: 0 };
+
+            node.addEventListener('touchstart', (e) => {
+                touchStartTime = Date.now();
+                touchStartPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            }, { passive: true });
+
+            node.addEventListener('touchend', (e) => {
+                const touchDuration = Date.now() - touchStartTime;
+                const touchEndPos = { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
+                const distance = Math.hypot(touchEndPos.x - touchStartPos.x, touchEndPos.y - touchStartPos.y);
+
+                // Only trigger if it's a quick tap (< 300ms) and didn't move much (< 20px)
+                if (touchDuration < 300 && distance < 20) {
+                    e.stopPropagation();
+                    if(currentNodeIndex !== index) {
+                        zoomToNode(index);
+                    }
+                }
+            });
         });
 
         // --- 2. DRAW SVG PATH ---
